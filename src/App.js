@@ -1,4 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+
+// Google Fonts can be imported in index.html for Montserrat and Open Sans
+// font-family: 'Montserrat', 'Poppins' for headings; 'Open Sans', 'Lato' for body
+
+const colors = {
+  blue: '#007BFF',
+  white: '#FFFFFF',
+  lightGray: '#F8F9FA',
+  darkGray: '#343A40',
+  teal: '#20C997',
+  orange: '#FD7E14',
+};
 
 const rolesList = [
   "Inside Sales", "B2B Sales", "Data Analytics", "Data Science",
@@ -7,143 +19,245 @@ const rolesList = [
   "Finance Operations", "Sales Manager", "Digital Marketing", "Supply Chain",
   "Product Management"
 ];
+
 const timeSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM", "04:00 PM"];
 
-function generateMeetingLink() {
-  return `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`;
-}
+// Icon SVG for input fields (example: email)
+const EmailIcon = () => (
+  <svg style={{width: '20px', height: '20px', marginRight: 8, fill: colors.darkGray}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1.998 6.993L12 13.195l10.002-6.202V18H1.998zM12 11L1.998 5h20.004L12 11z"/></svg>
+);
 
-export default function App() {
-  const [user, setUser] = useState({ name: '', email: '', password: '', college:'', course:'' });
+const PasswordIcon = () => (
+  <svg style={{width: '20px', height: '20px', marginRight: 8, fill: colors.darkGray}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 8H7v6h10V8zm-4 6a2 2 0 100-4 2 2 0 000 4z"/><path d="M5 8V6a7 7 0 1114 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2-2v2h10V6a5 5 0 00-10 0z"/></svg>
+);
+
+function App() {
+  const [user, setUser] = useState({ name: '', email: '', password: '', college: '', course: '' });
   const [loggedIn, setLoggedIn] = useState(false);
   const [loginMode, setLoginMode] = useState('signIn');
   const [page, setPage] = useState('login');
 
   const [service, setService] = useState('');
-  const [interviewPrepData, setInterviewPrepData] = useState({ role:'', company:'', sessionType:'' });
+  const [interviewPrepData, setInterviewPrepData] = useState({ role: '', company: '', sessionType: '' });
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [sessionRequests, setSessionRequests] = useState([]);
 
-  const btnStyle = {
-    backgroundColor: '#FF6600',
-    color: 'white',
-    padding: '12px 20px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: 16,
-    margin: '5px'
+  // Handle Login/Signup Submit
+  const handleSubmit = e => {
+    e.preventDefault();
+    if(loginMode === 'signUp'){
+      if(!user.email || !user.password || !user.name || !user.college || !user.course){
+        alert('Please fill all sign up fields.');
+        return;
+      }
+      alert(`Welcome, ${user.name}! Sign up successful.`);
+    } else {
+      if(!user.email || !user.password){
+        alert('Please enter Email and Password to sign in.');
+        return;
+      }
+      alert(`Welcome back, ${user.email}!`);
+    }
+    setLoggedIn(true);
+    setPage('home');
   };
-  const inputStyle = {
-    width:'100%',
-    padding:'8px',
-    marginTop:'5px',
-    marginBottom:'15px',
-    borderRadius:'5px',
-    border:'1px solid #ccc',
-    fontSize:'16px',
+
+  // Styles
+  const container = {
+    fontFamily: `'Open Sans', 'Lato', Arial, sans-serif`,
+    backgroundColor: colors.lightGray,
+    minHeight: '100vh',
+    padding: 0,
+    margin: 0,
   };
-  const containerStyle = {
-    maxWidth: 600,
+
+  const formContainer = {
+    maxWidth: 400,
     margin: 'auto',
-    padding: '20px',
-    backgroundColor: '#add8e6',
-    minHeight:'100vh',
-    boxSizing: 'border-box',
-  };
-  const boxStyle = {
-    backgroundColor: '#FF6600',
-    padding: '30px',
-    borderRadius:'10px',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-    color:'white',
-    width: '350px',
-    margin: 'auto'
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    padding: 30,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
   };
 
-  // Login / Sign up page
+  const header = {
+    fontFamily: `'Montserrat', 'Poppins', sans-serif`,
+    color: colors.blue,
+    textAlign: 'center',
+    fontSize: 32,
+    marginBottom: 24,
+    fontWeight: 700,
+  };
+
+  const inputWrapper = {
+    display: 'flex',
+    alignItems: 'center',
+    border: `1px solid ${colors.darkGray}`,
+    borderRadius: 6,
+    marginBottom: 20,
+    padding: '8px 12px',
+    backgroundColor: colors.white,
+  };
+
+  const input = {
+    border: 'none',
+    outline: 'none',
+    fontSize: 16,
+    flexGrow: 1
+  };
+
+  const buttonPrimary = {
+    width: '100%',
+    backgroundColor: colors.teal,
+    color: colors.white,
+    border: 'none',
+    borderRadius: 6,
+    padding: '12px',
+    fontSize: 18,
+    cursor: 'pointer',
+    fontWeight: '600',
+  };
+
+  const linkStyle = {
+    color: colors.darkGray,
+    fontSize: 14,
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    marginTop: 10,
+    textAlign: 'center',
+  };
+
+  const navBar = {
+    backgroundColor: colors.white,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    padding: '0 24px',
+    height: 60,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontFamily: `'Montserrat', 'Poppins', sans-serif`,
+    color: colors.darkGray,
+    fontWeight: 600,
+  };
+
+  const cardGrid = {
+    display: 'flex',
+    justifyContent: 'space-around',
+    marginTop: 40,
+  };
+
+  const card = {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 24,
+    width: 200,
+    boxShadow: '0 4px 10px rgba(0,0,0,0.07)',
+    cursor: 'pointer',
+    color: colors.darkGray,
+    fontWeight: 700,
+    fontSize: 18,
+    textAlign: 'center',
+    transition: 'box-shadow 0.3s',
+  };
+
+  // Hover style for card - add with a bit of state or CSS - here simplified with inline handlers
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  // Home welcome message
+  const WelcomeMessage = () => (
+    <div style={{maxWidth: 700, margin: '40px auto', color: colors.darkGray, lineHeight: 1.6, fontSize: 18, fontWeight: 500, fontFamily: `'Open Sans', 'Lato', sans-serif`}}>
+      <h2 style={{color: colors.orange, fontFamily: `'Montserrat', 'Poppins', sans-serif`, fontWeight: 700, textAlign: 'center', marginBottom: 24}}>Welcome to Zobology!</h2>
+      <p>We’re not bots. We’re not powered by AI.</p>
+      <p>We’re real people – with real stories – who once sat where you are now. Just a decade ago, we had questions like:</p>
+      <p style={{color: colors.blue, fontWeight: 600, fontStyle: 'italic'}}>
+        Interview mein kya puchenge?<br />
+        Naukri milegi?<br />
+        Kaunsi industry best hai?<br />
+        Kaunsa role sahi hai?
+      </p>
+      <p>Back then, clear answers were hard to find. That’s why Zobology was created — to share honest, real-world experiences by people who’ve been in your shoes.</p>
+      <p>Meet your Jeetu Bhaiyas and Didis — professionals from across industries and roles — ready to guide you on your corporate journey.</p>
+      <h3 style={{color: colors.orange, marginTop: 30}}>Interview ki Tayaari</h3>
+      <p>Connect with industry pros who've interviewed many candidates. Learn what interviewers seek, typical questions, how to tell your story, and how to lead your interview with the right words.</p>
+      <h3 style={{color: colors.orange, marginTop: 24}}>Role ki Jaankari</h3>
+      <p>Understand corporate roles by connecting with professionals. Learn about daily activities, challenges, growth opportunities, and what the job truly involves.</p>
+      <h3 style={{color: colors.orange, marginTop: 24}}>Baat Chit</h3>
+      <p>Talk about life, relationships, jobs, challenges, or ideas with young industry professionals who share the realities of corporate life and how to navigate them.</p>
+    </div>
+  );
+
+  // Login Page JSX
   if(!loggedIn && page === 'login'){
     return (
-      <div style={{ backgroundColor: '#add8e6', height: '100vh', display: 'flex', flexDirection:'column', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{color:'#003366', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", marginBottom: '20px'}}>
-          Zobology
-        </h1>
-        <div style={boxStyle}>
-          <form onSubmit={e => {
-            e.preventDefault();
-            if(loginMode === 'signUp'){
-              if(!user.email || !user.password || !user.name || !user.college || !user.course){
-                alert('Please fill all sign up fields');
-                return;
-              }
-              alert(`Signed Up as ${user.name}`);
-            } else {
-              if(!user.email || !user.password){
-                alert('Please enter Email and Password to sign in');
-                return;
-              }
-              alert(`Signed In as ${user.email}`);
-            }
-            setLoggedIn(true);
-            setPage('home');
-          }} style={{display:'flex', flexDirection:'column'}}>
-            {loginMode === 'signUp' && <>
-              <label>Name</label>
+      <div style={container}>
+        <div style={{...formContainer, marginTop: 80}}>
+          <h1 style={header}>Zobology</h1>
+          <form onSubmit={handleSubmit} noValidate>
+            {loginMode === 'signUp' && (
+              <>
+                <div style={inputWrapper}>
+                  <input 
+                    type="text" 
+                    placeholder="Name" 
+                    value={user.name} 
+                    onChange={e => setUser({...user, name: e.target.value})}
+                    style={input}
+                    required 
+                  />
+                </div>
+                <div style={inputWrapper}>
+                  <input 
+                    type="text" 
+                    placeholder="College" 
+                    value={user.college} 
+                    onChange={e => setUser({...user, college: e.target.value})}
+                    style={input}
+                    required 
+                  />
+                </div>
+                <div style={inputWrapper}>
+                  <input 
+                    type="text" 
+                    placeholder="Course" 
+                    value={user.course} 
+                    onChange={e => setUser({...user, course: e.target.value})}
+                    style={input}
+                    required 
+                  />
+                </div>
+              </>
+            )}
+            <div style={inputWrapper}>
+              <EmailIcon />
               <input 
-                type="text" 
-                value={user.name} 
-                onChange={e => setUser({...user,name:e.target.value})} 
-                placeholder="Your full name" 
-                style={inputStyle} 
+                type="email" 
+                placeholder="Email ID" 
+                value={user.email} 
+                onChange={e => setUser({...user,email: e.target.value})}
+                style={input}
                 required
               />
-              <label>College</label>
+            </div>
+            <div style={inputWrapper}>
+              <PasswordIcon />
               <input 
-                type="text" 
-                value={user.college} 
-                onChange={e => setUser({...user,college:e.target.value})} 
-                placeholder="College Name" 
-                style={inputStyle} 
+                type="password" 
+                placeholder={loginMode === 'signUp' ? "Set Password" : "Password"} 
+                value={user.password} 
+                onChange={e => setUser({...user,password: e.target.value})}
+                style={input} 
                 required
               />
-              <label>Course</label>
-              <input 
-                type="text" 
-                value={user.course} 
-                onChange={e => setUser({...user,course:e.target.value})} 
-                placeholder="Course Name" 
-                style={inputStyle} 
-                required
-              />
-            </>}
-            <label>Email ID</label>
-            <input 
-              type="email" 
-              value={user.email} 
-              onChange={e => setUser({...user,email:e.target.value})} 
-              placeholder="example@mail.com" 
-              style={inputStyle} 
-              required
-            />
-            <label>Password</label>
-            <input 
-              type="password" 
-              value={user.password} 
-              onChange={e => setUser({...user,password:e.target.value})} 
-              placeholder="Set your password" 
-              style={inputStyle} 
-              required
-            />
-            <button type="submit" style={btnStyle}>
+            </div>
+            <button type="submit" style={buttonPrimary}>
               {loginMode === 'signUp' ? 'Sign Up' : 'Sign In'}
             </button>
           </form>
-          <p style={{marginTop:'15px', textAlign:'center'}}>
+          <p style={{textAlign:'center', marginTop: 14, color: colors.darkGray}}>
             {loginMode === 'signUp' ? 'Already have an account? ' : "Don't have an account? "}
             <span 
-              style={{textDecoration:'underline', cursor:'pointer'}}
-              onClick={() => setLoginMode(loginMode === 'signUp' ? 'signIn' : 'signUp')}
+              onClick={() => setLoginMode(loginMode === 'signUp' ? 'signIn' : 'signUp')} 
+              style={{color: colors.blue, cursor: 'pointer', fontWeight: '600'}}
             >
               {loginMode === 'signUp' ? 'Sign In' : 'Sign Up'}
             </span>
@@ -153,78 +267,92 @@ export default function App() {
     );
   }
 
-  // Home Page
+  // Home Page JSX
   if(page === 'home'){
     return (
-      <div style={containerStyle}>
-        <h1 style={{textAlign:'center', color:'#003366', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"}}>
-          Welcome to Zobology
-        </h1>
-        <p style={{whiteSpace:'pre-line', fontSize:18, textAlign:'center', marginTop:40, marginBottom:40}}>
-{`We are not Bots, we are not using AI….we are humans, 10 years back we were students like you, seeking answers like 
-interview me kya puchenge? Naukri milegi? Kaunsi industry achi hai? Kaunsa role acha hai? 
-
-Obviously, we didn’t had much answers, I am sure you are also struggling with the same, that’s why we have created Zobology, to share our real world experiences.
-
-We have your Jeetu Bhaiyas and Didis with us, from across the industries , different roles, who can help you prepare for your “Corporate Journey”`}
-        </p>
-        <div style={{display:'flex', justifyContent:'center'}}>
-          <button style={btnStyle} onClick={() => {setService("Interview ki Tayaari"); setPage("interviewPrep")}}>
-            Interview ki Tayaari
-          </button>
-          {/* Disabled buttons for future expansion */}
-          <button style={{...btnStyle, opacity: 0.6, cursor: 'not-allowed'}} disabled>
-            Role ki Jankaari
-          </button>
-          <button style={{...btnStyle, opacity: 0.6, cursor: 'not-allowed'}} disabled>
-            Baat Chit Industry ke logo se
-          </button>
-        </div>
-        <div style={{textAlign:'center', marginTop:'40px'}}>
-          <button onClick={() => { setLoggedIn(false); setPage('login'); }} style={{ ...btnStyle, backgroundColor: '#dc3545' }}>Logout</button>
-        </div>
+      <div style={{...container, paddingTop: 60}}>
+        <nav style={navBar}>
+          <div style={{fontWeight: 700, fontSize: 24, color: colors.blue, fontFamily: `'Montserrat', 'Poppins', sans-serif`}}>Zobology</div>
+          <div style={{fontWeight: 600, color: colors.darkGray, cursor: 'pointer'}} onClick={() => {
+            setLoggedIn(false);
+            setPage('login');
+          }}>
+            Logout
+          </div>
+        </nav>
+        <main>
+          <WelcomeMessage />
+          <div style={cardGrid}>
+            <div 
+              style={hoveredCard === 'interview' ? {...card, boxShadow: '0 8px 16px rgba(0,0,0,0.15)'} : card} 
+              onMouseEnter={() => setHoveredCard('interview')} 
+              onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => { setService('Interview ki Tayaari'); setPage('interviewPrep'); }}
+            >
+              Interview ki Tayaari
+            </div>
+            <div 
+              style={{...card, opacity: 0.5, cursor: 'not-allowed'}}
+              title="Coming Soon"
+            >
+              Role ki Jankaari
+            </div>
+            <div 
+              style={{...card, opacity: 0.5, cursor: 'not-allowed'}}
+              title="Coming Soon"
+            >
+              Baat Chit Industry ke logo se
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
-  // Interview Preparation Page
+  // Interview Preparation Booking Page
   if(page === 'interviewPrep'){
     return (
-      <div style={containerStyle}>
-        <div style={{maxWidth: 500, margin: 'auto'}}>
-          <h2 style={{textAlign:'center', color:'#003366'}}>Interview ki Tayaari</h2>
-          <label>Role</label>
+      <div style={container}>
+        <nav style={navBar}>
+          <div style={{fontWeight: 700, fontSize: 24, color: colors.blue, fontFamily: `'Montserrat', 'Poppins', sans-serif`}}>Zobology</div>
+          <div style={{fontWeight: 600, color: colors.darkGray, cursor: 'pointer'}} onClick={() => setPage('home')}>
+            &#8592; Back
+          </div>
+        </nav>
+        <main style={{maxWidth: 600, margin: '40px auto', backgroundColor: colors.white, padding: 24, borderRadius: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
+          <h2 style={{color: colors.orange, fontFamily: `'Montserrat', 'Poppins', sans-serif`}}>Interview ki Tayaari</h2>
+          <label style={{display:'block', marginTop: 16, fontWeight: 600, color: colors.darkGray}}>Role:</label>
           <select 
             value={interviewPrepData.role} 
-            onChange={e => setInterviewPrepData({...interviewPrepData, role: e.target.value})} 
-            style={inputStyle}
+            onChange={e => setInterviewPrepData({...interviewPrepData, role: e.target.value})}
+            style={{...inputStyle, marginBottom: 20}}
           >
             <option value="">Select Role</option>
             {rolesList.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          <label>Company Name</label>
+          <label style={{display: 'block', marginBottom: 6, fontWeight: 600, color: colors.darkGray}}>Company Name:</label>
           <input 
             type="text" 
             placeholder="Company Name" 
             value={interviewPrepData.company} 
-            onChange={e => setInterviewPrepData({...interviewPrepData, company: e.target.value})} 
+            onChange={e => setInterviewPrepData({...interviewPrepData, company: e.target.value})}
             style={inputStyle}
           />
 
-          <label>Session Type</label>
+          <label style={{display: 'block', marginBottom: 6, fontWeight: 600, color: colors.darkGray}}>Session Type:</label>
           <select 
             value={interviewPrepData.sessionType} 
-            onChange={e => setInterviewPrepData({...interviewPrepData, sessionType: e.target.value})} 
-            style={inputStyle}
+            onChange={e => setInterviewPrepData({...interviewPrepData, sessionType: e.target.value})}
+            style={{...inputStyle, marginBottom: 20}}
           >
             <option value="">Select Session Type</option>
             <option value="Free Session for 10 Mins">Free Session for 10 Mins</option>
             <option value="Paid Session for 60 mins">Paid Session for 60 mins - INR 4999</option>
           </select>
 
-          <h3>Schedule Session</h3>
-          <label>Date</label>
+          <h3 style={{color: colors.darkGray}}>Schedule Session</h3>
+          <label>Date:</label>
           <input 
             type="date" 
             min={new Date().toISOString().split('T')[0]} 
@@ -232,49 +360,54 @@ We have your Jeetu Bhaiyas and Didis with us, from across the industries , diffe
             onChange={e => setSelectedDate(e.target.value)} 
             style={inputStyle} 
           />
-          <label>Time Slot</label>
+
+          <label>Time Slot:</label>
           <select 
             value={selectedTime} 
             onChange={e => setSelectedTime(e.target.value)} 
-            style={inputStyle}
+            style={{...inputStyle, marginBottom: 20}}
           >
             <option value="">Select Time Slot</option>
             {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
 
-          <div style={{marginTop:'20px', textAlign:'center'}}>
-            <button style={btnStyle} onClick={() => {
-              if(!interviewPrepData.role || !interviewPrepData.sessionType || !selectedDate || !selectedTime) {
-                alert('Please fill all fields and schedule');
-                return;
-              }
-              const newRequest = {
-                id: Date.now(),
-                userEmail: user.email,
-                userName: user.name,
-                service: "Interview ki Tayaari",
-                sessionType: interviewPrepData.sessionType,
-                role: interviewPrepData.role,
-                company: interviewPrepData.company,
-                date: selectedDate,
-                time: selectedTime,
-                adminStatus: "Pending",
-                meetingLink: "",
-                paymentStatus: interviewPrepData.sessionType === 'Free Session for 10 Mins' ? 'Pending' : 'Paid'
-              };
-              setSessionRequests([...sessionRequests, newRequest]);
-              alert('Interview Preparation session request submitted for admin approval.');
-              setPage('home');
-              setInterviewPrepData({role:'', company:'', sessionType:''});
-              setSelectedDate('');
-              setSelectedTime('');
-            }}>Submit</button>
-            <button style={{...btnStyle, backgroundColor:'#6c757d', marginLeft: 15}} onClick={() => setPage('home')}>Back</button>
+          <div style={{textAlign: 'center'}}>
+            <button 
+              style={btnStyle} 
+              onClick={() => {
+                if(!interviewPrepData.role || !interviewPrepData.sessionType || !selectedDate || !selectedTime){
+                  alert('Please fill all fields and schedule session.');
+                  return;
+                }
+                const newRequest = {
+                  id: Date.now(),
+                  userEmail: user.email,
+                  userName: user.name,
+                  service: "Interview ki Tayaari",
+                  sessionType: interviewPrepData.sessionType,
+                  role: interviewPrepData.role,
+                  company: interviewPrepData.company,
+                  date: selectedDate,
+                  time: selectedTime,
+                  adminStatus: "Pending",
+                  meetingLink: "",
+                  paymentStatus: interviewPrepData.sessionType === 'Free Session for 10 Mins' ? 'Pending' : 'Paid'
+                };
+                alert('Session request submitted for admin approval.');
+                setPage('home');
+                setSelectedDate('');
+                setSelectedTime('');
+                setInterviewPrepData({ role: '', company: '', sessionType: '' });
+                setSessionRequests([...sessionRequests, newRequest]);
+              }}
+            >
+              Book Now
+            </button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
-  return <div style={{padding: 20, textAlign: 'center', color:'#003366'}}>Page not implemented yet</div>;
+  return <div style={{padding: 20, textAlign: 'center', color: colors.darkGray}}>Loading...</div>;
 }
