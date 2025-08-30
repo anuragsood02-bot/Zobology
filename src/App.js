@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
 
-// Inline SVG icon components defined before usage
+// Define EmailIcon component inline
 const EmailIcon = () => (
-  <svg width="20" height="20" fill="#343A40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={{marginRight: 8}}>
+  <svg 
+    width="20" 
+    height="20" 
+    fill="#343A40" 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    style={{ marginRight: 8 }}
+  >
     <path d="M1.998 6.993L12 13.195l10.002-6.202V18H1.998zM12 11L1.998 5h20.004L12 11z" />
   </svg>
 );
 
+// Define PasswordIcon component inline
 const PasswordIcon = () => (
-  <svg width="20" height="20" fill="#343A40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style={{marginRight: 8}}>
-    <path d="M17 8H7v6h10V8zm-4 6a2 2 0 100-4 2 2 0 000 4z" />
-    <path d="M5 8V6a7 7 0 1114 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2-2v2h10V6a5 5 0 00-10 0z" />
+  <svg 
+    width="20" 
+    height="20" 
+    fill="#343A40" 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    style={{ marginRight: 8 }}
+  >
+    <path d="M17 8H7v6h10V8zm-4 6a2 2 0 100-4 2 2 0 000 4z"/>
+    <path d="M5 8V6a7 7 0 1114 0v2h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2v-8a2 2 0 012-2h1zm2-2v2h10V6a5 5 0 00-10 0z"/>
   </svg>
 );
 
@@ -421,6 +436,6 @@ function App() {
     );
   }
 
-  return <div style={{padding: 20, textAlign: 'center', color: colors.darkGray}}>Loading...</div>;
+  return <div style={{ padding: 20, textAlign: 'center', color: colors.darkGray }}>Loading...</div>;
 }
 
