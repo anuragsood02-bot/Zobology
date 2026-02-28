@@ -1,6 +1,6 @@
 """
-AI Data Analyst - Top N Tables + Text + Charts!
-"top 3 balance" → Table | "user with highest" → Text | "chart" → Visual
+🧠 DATABRO - AI Data Analyst Chat
+Always chat-ready | Tables for top N | Text-first | Admin learning
 """
 
 import streamlit as st
@@ -11,8 +11,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 import re
 
+st.set_page_config(
+    page_title="Databro - AI Data Analyst", 
+    page_icon="🧠", 
+    layout="wide"
+)
+
 # =============================================================================
-# LEARNING ENGINE - Admin Only
+# DATABRO LEARNING ENGINE - Admin Only
 # =============================================================================
 @st.cache_data
 def init_learning_engine():
@@ -40,10 +46,11 @@ def learn_from_query(query, success=True):
     engine["success_rate"] = engine["success_rate"] * 0.9 + (1.0 if success else 0.0) * 0.1
 
 # =============================================================================
-# ADMIN PANEL
+# DATABRO ADMIN PANEL
 # =============================================================================
-def show_admin_panel():
-    st.sidebar.markdown("### 🔐 **ADMIN**"); st.sidebar.markdown("─" * 30)
+def show_databro_admin():
+    st.sidebar.markdown("### 🔐 **DATABRO ADMIN**")
+    st.sidebar.markdown("─" * 30)
     engine = st.session_state.learning_engine
     
     col1, col2, col3 = st.sidebar.columns(3)
@@ -57,10 +64,9 @@ def show_admin_panel():
         st.sidebar.markdown(f"{i}. **{keyword}**: {count}")
 
 # =============================================================================
-# SMART ANALYSIS - Tables for Top N!
+# DATABRO SMART ANALYSIS
 # =============================================================================
 def extract_top_n(query):
-    """Extract number from 'top 3', 'top 5', etc."""
     match = re.search(r'top\s+(\d+)', query.lower())
     return int(match.group(1)) if match else None
 
@@ -88,176 +94,181 @@ def find_customer_name(df, row_index):
         return val if pd.notna(val) else f"Row {row_index}"
     return f"Row {row_index}"
 
-def analyze_data(df, query):
+def databro_analyze(df, query):
     query_lower = query.lower()
     wants_chart = any(word in query_lower for word in ['chart', 'graph', 'plot', 'visual'])
     top_n = extract_top_n(query)
     
-    # 🎯 TOP N TABLE (top 3, top 5, top 10)
+    # 🎯 TOP N → TABLE
     if top_n:
         value_col = find_best_numeric_column(df)
         if value_col and value_col in df.columns:
             valid_data = df[[value_col]].dropna().nlargest(top_n, value_col)
             if not valid_data.empty:
-                # Create table data
                 table_data = []
-                for idx in valid_data.index:
+                for i, idx in enumerate(valid_data.index, 1):
                     name = find_customer_name(df, idx)
                     amount = valid_data.loc[idx, value_col]
-                    table_data.append({"Rank": len(table_data)+1, "Customer": name, value_col: f"₹{amount:,.0f}"})
+                    table_data.append({"#": i, "Customer": name, value_col: f"₹{amount:,.0f}"})
                 
                 df_table = pd.DataFrame(table_data)
+                st.dataframe(df_table, use_container_width=True, hide_index=True)
                 
                 response = f"✅ **Top {top_n} {value_col.title()}**"
                 
-                # Show table
-                st.dataframe(df_table, use_container_width=True, hide_index=True)
-                
-                # Chart if requested
                 if wants_chart:
                     labels = [row['Customer'] for row in table_data]
                     values = [float(v.replace('₹', '').replace(',', '')) for v in [row[value_col] for row in table_data]]
-                    fig = px.bar(x=values, y=labels, orientation='h',
-                               title=f"Top {top_n} {value_col.title()}", color=values,
-                               color_continuous_scale='Viridis')
+                    fig = px.bar(x=values, y=labels, orientation='h', title=f"Top {top_n} {value_col}",
+                               color=values, color_continuous_scale='Viridis')
                     fig.update_layout(height=300, showlegend=False)
                     st.plotly_chart(fig, use_container_width=True)
-                
-                return response, None if not wants_chart else fig
-            return f"❌ Not enough data for top {top_n}", None
-        
-        return "❌ No numeric data found", None
+                    return response, fig
+                return response, None
+        return "❌ Not enough data", None
     
-    # 🎯 SINGLE USER - Text only
+    # 🎯 SINGLE USER → TEXT
     elif 'user' in query_lower and any(word in query_lower for word in ['highest','top','max']):
         value_col = find_best_numeric_column(df)
-        if value_col and value_col in df.columns:
+        if value_col:
             valid_data = df[[value_col]].dropna()
             if not valid_data.empty:
                 top_row = valid_data.nlargest(1, value_col).iloc[0]
-                top_value = top_row[value_col]
                 customer_name = find_customer_name(df, top_row.name)
-                
-                response = f"✅ **{customer_name}** has highest **{value_col}**: **₹{top_value:,.0f}**"
+                response = f"✅ **{customer_name}** has highest **{value_col}**: **₹{top_row[value_col]:,.0f}**"
                 
                 if wants_chart:
                     fig = go.Figure()
-                    fig.add_trace(go.Bar(x=[top_value], y=[customer_name], orientation='h',
-                                       text=[f'₹{top_value:,.0f}'], textposition='outside',
+                    fig.add_trace(go.Bar(x=[top_row[value_col]], y=[customer_name], orientation='h',
+                                       text=[f'₹{top_row[value_col]:,.0f}'], textposition='outside',
                                        marker_color='#FFD700', marker_line_color='black', marker_line_width=2))
-                    fig.update_layout(height=120, showlegend=False, margin=dict(t=10))
+                    fig.update_layout(height=120, showlegend=False)
+                    st.plotly_chart(fig, use_container_width=True)
                     return response, fig
                 return response, None
-        
-        return "❌ No user data found", None
+        return "❌ No user data", None
     
-    # Regular highest/top (no number) - Text summary
+    # Regular top → TEXT summary
     elif any(word in query_lower for word in ['highest','top','max']):
         value_col = find_best_numeric_column(df)
-        if value_col and value_col in df.columns:
-            valid_data = df[[value_col]].dropna().nlargest(10, value_col)
+        if value_col:
+            valid_data = df[[value_col]].dropna().nlargest(5, value_col)
             if not valid_data.empty:
-                top_3_names = [find_customer_name(df, idx) for idx in valid_data.head(3).index]
-                total_top10 = valid_data[value_col].sum()
-                
-                response = f"✅ Top **{value_col}**:\n• **{top_3_names[0]}** (#{1})\n• **{top_3_names[1]}** (#{2})\n• **{top_3_names[2]}** (#{3})\n... Top 10 total: **₹{total_top10:,.0f}**"
-                
+                top_3 = [find_customer_name(df, idx) for idx in valid_data.head(3).index]
+                response = f"✅ **Top 3 {value_col}**:\n• **{top_3[0]}** (1st)\n• **{top_3[1]}** (2nd)\n• **{top_3[2]}** (3rd)"
                 if wants_chart:
                     labels = [find_customer_name(df, idx) for idx in valid_data.index]
                     fig = px.bar(x=valid_data[value_col], y=labels, orientation='h',
-                               title=f"Top 10 {value_col.title()}", color=valid_data[value_col],
+                               title=f"Top 5 {value_col}", color=valid_data[value_col],
                                color_continuous_scale='Viridis')
-                    fig.update_layout(height=400, showlegend=False)
+                    fig.update_layout(height=300, showlegend=False)
+                    st.plotly_chart(fig, use_container_width=True)
                     return response, fig
                 return response, None
-        
-        return "❌ No numeric data", None
+        return "❌ No data", None
     
     # Totals
     elif any(word in query_lower for word in ['total','sum']):
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) > 0:
             totals = df[numeric_cols].sum()
-            total_all = totals.sum()
-            response = f"✅ **Total**: ₹{total_all:,.0f}\n"
+            response = f"✅ **Grand Total**: ₹{totals.sum():,.0f}\n"
             for col in totals.index:
                 response += f"• **{col}**: ₹{totals[col]:,.0f}\n"
-            
             if wants_chart:
                 fig = px.bar(x=totals.values, y=totals.index, orientation='h',
                            title="Totals", color=totals.values, color_continuous_scale='Blues')
+                st.plotly_chart(fig, use_container_width=True)
                 return response, fig
             return response, None
         return "❌ No numeric data", None
     
-    return "💡 Try: 'top 3 balance', 'top 5 revenue', 'user with highest', 'total sales'", None
+    return "💡 **Databro tips**: 'top 3 balance', 'user with highest', 'total sales', 'top 5 chart'", None
 
 # =============================================================================
-# MAIN APP
+# DATABRO MAIN CHAT INTERFACE
 # =============================================================================
 def main():
-    st.set_page_config(page_title="AI Data Analyst", page_icon="🧠", layout="wide")
+    st.title("🧠 **Databro** - Your AI Data Analyst")
+    st.markdown("**💬 Chat anytime! Ask multiple questions → Databro learns & gets smarter**")
     
-    st.title("🧠 **AI Data Analyst**")
-    st.markdown("**Tables for 'top 3/5/10' | Text by default | Charts when asked**")
-    
+    # Initialize
     if "learning_engine" not in st.session_state:
         st.session_state.learning_engine = init_learning_engine()
     if "df" not in st.session_state:
         st.session_state.df = None
-    if "query_history" not in st.session_state:
-        st.session_state.query_history = []
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
     
-    st.sidebar.title("⚙️ Controls")
-    if st.sidebar.checkbox("🔐 **Admin Mode**"): show_admin_panel()
+    # Sidebar - Databro Admin
+    st.sidebar.title("⚙️ **Databro Controls**")
+    if st.sidebar.checkbox("🔐 **Databro Admin**"):
+        show_databro_admin()
     
+    # File upload (always visible)
     uploaded_file = st.file_uploader("📁 **Upload CSV**", type="csv")
     
-    if uploaded_file is not None:
+    if uploaded_file is not None and st.session_state.df is None:
         df = pd.read_csv(uploaded_file)
         st.session_state.df = df
+        st.success("✅ **Databro loaded your data!** Ask away 👇")
         
+        # Data preview
         col1, col2 = st.columns([3, 1])
         with col1:
             st.markdown("### 📊 **Data Preview**")
             st.dataframe(df.head(10), use_container_width=True)
         with col2:
-            st.markdown("### 📈 **Stats**")
+            st.markdown("### 📈 **Databro Stats**")
             st.metric("Rows", f"{len(df):,}")
             st.metric("Columns", len(df.columns))
-            st.metric("Numeric", df.select_dtypes(include=[np.number]).shape[1])
-        
-        st.markdown("─" * 80)
-        
-        st.markdown("### 💬 **Ask Questions**")
-        query = st.text_input("", placeholder="top 3 balance, top 5 revenue, user with highest balance...",
-                            key="main_query", label_visibility="collapsed")
-        
-        if query and st.session_state.df is not None:
-            with st.spinner("🧠 Analyzing..."):
-                result_text, chart = analyze_data(st.session_state.df, query)
-                learn_from_query(query, success=result_text != "❌")
-                
-                if result_text:
-                    st.markdown(result_text)
-                    if chart:
-                        st.plotly_chart(chart, use_container_width=True)
-                
-                st.session_state.query_history.append(query)
-        
-        if st.session_state.query_history:
-            with st.expander("📜 Previous Questions"):
-                for q in st.session_state.query_history[-3:]:
-                    st.write(f"• {q}")
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # DATABRO CHAT - ALWAYS VISIBLE QUERY BOX
+    # ═══════════════════════════════════════════════════════════════════════════
+    st.markdown("─" * 80)
+    
+    # Chat history display
+    if st.session_state.chat_history:
+        st.markdown("### 💬 **Databro Chat History**")
+        for query, response in st.session_state.chat_history[-5:]:
+            with st.chat_message("user"):
+                st.write(f"**You**: {query}")
+            with st.chat_message("assistant"):
+                st.markdown(response)
+    
+    # ALWAYS VISIBLE QUERY INPUT
+    if st.session_state.df is not None:
+        st.markdown("### 🤖 **Ask Databro** (chat continues!)")
+        query = st.chat_input("Type your question: top 3 balance, user with highest, total revenue...")
+        
+        if query:
+            with st.chat_message("user"):
+                st.write(f"**You**: {query}")
+            
+            with st.chat_message("assistant"):
+                with st.spinner("Databro thinking..."):
+                    result_text, chart = databro_analyze(st.session_state.df, query)
+                    learn_from_query(query, success=result_text != "❌")
+                    
+                    # Store in chat history
+                    st.session_state.chat_history.append((query, result_text))
+                    
+                    if result_text and result_text != "❌":
+                        st.success(result_text)
+                        if chart:
+                            st.plotly_chart(chart, use_container_width=True)
+                    else:
+                        st.warning(result_text)
     else:
-        st.info("👆 **Upload CSV!**")
+        st.info("👆 **Upload CSV → Start chatting with Databro!**")
         st.markdown("""
-        ### 🎯 **Smart Responses:**
-        • `top 3 balance` → **Clean table**
-        • `top 5 revenue` → **Table format**  
-        • `user with highest` → **Single name + amount**
-        • `top revenue chart` → **Text + bar chart**
+        ### 🎯 **Databro understands:**
+        • `top 3 balance` → Clean table
+        • `top 5 revenue` → Table format  
+        • `user with highest balance` → Single answer
+        • `total sales` → Summary
+        • `top 3 chart` → Table + visual
         """)
 
 if __name__ == "__main__":
