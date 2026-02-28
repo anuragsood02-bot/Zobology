@@ -11,17 +11,24 @@ st.set_page_config(page_title="Databro", layout="wide")
 st.title("🏢 **Databro** - SMB Data Analyst AI")
 st.markdown("Upload CSV → Ask questions → Get insights instantly!")
 
-MAX_FILE_SIZE = 200 * 1024 * 1024
+MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
 
 with st.sidebar:
     st.header("⚙️ Setup")
-    claude_api_key = st.secrets.get("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
-    
+    # FIXED: Render Environment Variable only
+    claude_api_key = os.getenv("ANTHROPIC_API_KEY")
     if not claude_api_key:
-        st.error("🚫 Add ANTHROPIC_API_KEY to Render Environment")
+        st.error("🚫 Add **ANTHROPIC_API_KEY** to Render Environment Variables")
+        st.markdown("""
+        **Render Setup:**
+        1. Dashboard → Environment tab
+        2. Key: `ANTHROPIC_API_KEY`
+        3. Value: `sk-ant-your-complete-key`
+        """)
         st.stop()
     
-    uploaded_file = st.file_uploader("📁 Upload CSV/Excel", type=['csv', 'xlsx'])
+    uploaded_file = st.file_uploader("📁 Upload CSV/Excel", type=['csv', 'xlsx'], 
+                                   help="Sales, GST, finance data (max 200MB)")
 
 @st.cache_resource
 def load_claude():
@@ -34,10 +41,10 @@ def load_claude():
 
 if uploaded_file is not None:
     if uploaded_file.size > MAX_FILE_SIZE:
-        st.error("❌ File too large! Max 200MB")
+        st.error("❌ File too large! Max **200MB**")
         st.stop()
     
-    with st.spinner("Loading your data..."):
+    with st.spinner("🔄 Loading your data..."):
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         else:
@@ -54,7 +61,8 @@ if uploaded_file is not None:
         st.metric("Columns", len(df.columns))
         st.metric("Missing Values", df.isnull().sum().sum())
     
-    st.info("🛡️ Your data is secure: Never stored, deleted after session")
+    st.success("✅ Data loaded! Ask questions below 👇")
+    st.info("🛡️ **Your data is secure**: Never stored, deleted after session")
     
     st.subheader("💬 Ask about your data")
     
@@ -81,24 +89,31 @@ if uploaded_file is not None:
         
         with st.chat_message("assistant"):
             st_cb = StreamlitCallbackHandler(st.container())
-            with st.spinner("Claude is analyzing..."):
+            with st.spinner("🤖 Claude is analyzing your data..."):
                 try:
                     response = agent.run(prompt, callbacks=[st_cb])
                     st.markdown(response)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
-                    st.info("Try: 'show top customers'")
+                    st.info("💡 Try simpler questions:\n• 'show top customers'\n• 'sales by month'\n• 'total revenue'")
 
 else:
-    st.info("👆 Upload CSV/Excel to start")
+    st.info("👆 **Upload CSV/Excel to start analyzing**")
     st.markdown("""
-    ### 🎯 Try these SMB questions:
-    - "Top 5 customers by revenue"
-    - "Monthly sales trends" 
-    - "Profit by product/region"
-    - "Find expense outliers"
+    ### 🎯 **Perfect for SMBs** - Try these questions:
+    ```
+    💰 "Top 5 customers by revenue"
+    📈 "Monthly sales trends" 
+    🗺️ "Sales by region"
+    📊 "Profit margins by product"
+    ⚠️ "Find expense outliers"
+    ```
+    **200MB limit** = Full GST returns + FY data!
     """)
 
 st.markdown("---")
-st.markdown("💰 **₹499/month** | Built for Indian SMBs | Bank-grade security")
+st.markdown("""
+💰 **₹499/month** | Built for Indian SMBs | Bank-grade security  
+**Perfect for:** GST analysis, sales trends, expense tracking
+""")
