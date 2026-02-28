@@ -1,6 +1,6 @@
 """
-AI Data Analyst for SMBs - Learns from EVERY peer query (Admin sees ALL)
-Peers: Clean interface | You: Full learning analytics
+AI Data Analyst for SMBs - FIXED "Highest Balance" = SINGLE Customer!
+"customer with highest balance" → 1 name + amount exactly!
 """
 
 import streamlit as st
@@ -11,208 +11,214 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # =============================================================================
-# LEARNING ENGINE - ADMIN ONLY (Peers see NOTHING)
+# LEARNING ENGINE - ADMIN ONLY
 # =============================================================================
 @st.cache_data
 def init_learning_engine():
-    """Initialize learning engine - persists across sessions"""
     return {
-        "patterns": 7,                    # Starting basic patterns
-        "new_keywords": [],               # Auto-discovered business terms
-        "query_frequency": defaultdict(int),  # Tracks popular questions
-        "success_patterns": defaultdict(int), # What analysis works best
-        "total_queries": 0,
-        "successful_queries": 0,
-        "success_rate": 0.75             # Starting success rate
+        "patterns": 7, "new_keywords": [], "query_frequency": defaultdict(int),
+        "success_patterns": defaultdict(int), "total_queries": 0, "successful_queries": 0,
+        "success_rate": 0.75
     }
 
 def learn_from_query(query, success=True):
-    """Peers ask → You track SILENTLY (invisible learning)"""
     engine = st.session_state.learning_engine
-    
     engine["total_queries"] += 1
-    if success:
-        engine["successful_queries"] += 1
+    if success: engine["successful_queries"] += 1
     
-    # Extract business keywords (ignores show/get/top/etc)
     words = query.lower().split()
-    business_words = [w for w in words 
-                     if len(w) > 3 and w not in ['show', 'get', 'find', 'top', 'all', 'list']]
+    business_words = [w for w in words if len(w) > 3 and w not in ['show', 'get', 'find', 'top', 'all', 'list']]
     
-    # Learn NEW patterns/keywords
     new_words = [w for w in business_words if w not in engine["new_keywords"]]
     if new_words:
         engine["new_keywords"].extend(new_words)
         engine["patterns"] += len(new_words)
     
-    # Track frequency of business terms
     for word in business_words:
         engine["query_frequency"][word] += 1
     
-    # Update success rate (exponential moving average)
     prev_rate = engine["success_rate"]
     engine["success_rate"] = prev_rate * 0.9 + (1.0 if success else 0.0) * 0.1
 
 # =============================================================================
-# ADMIN PANEL - YOUR EYES ONLY
+# ADMIN PANEL
 # =============================================================================
 def show_admin_panel():
-    """Private admin dashboard - toggle to see learning progress"""
-    st.sidebar.markdown("### 🔐 **ADMIN PANEL**")
-    st.sidebar.markdown("─" * 40)
-    
+    st.sidebar.markdown("### 🔐 **ADMIN PANEL**"); st.sidebar.markdown("─" * 40)
     engine = st.session_state.learning_engine
     
-    # Key Metrics Row 1
     col1, col2, col3 = st.sidebar.columns(3)
-    with col1:
-        st.metric("🧠 Patterns Learned", engine["patterns"])
-    with col2:
-        st.metric("✨ New Keywords", len(engine["new_keywords"]))
-    with col3:
-        st.metric("📊 Success Rate", f"{engine['success_rate']:.1%}")
+    with col1: st.metric("🧠 Patterns", engine["patterns"])
+    with col2: st.metric("✨ Keywords", len(engine["new_keywords"]))
+    with col3: st.metric("📊 Success", f"{engine['success_rate']:.1%}")
     
-    st.sidebar.markdown("─" * 40)
-    
-    # Key Metrics Row 2
     col4, col5 = st.sidebar.columns(2)
-    with col4:
-        st.metric("📈 Total Queries", engine["total_queries"])
-    with col5:
-        st.metric("✅ Success Count", engine["successful_queries"])
+    with col4: st.metric("📈 Queries", engine["total_queries"])
+    with col5: st.metric("✅ Success", engine["successful_queries"])
     
-    st.sidebar.markdown("─" * 40)
-    
-    # 🔥 TOP PATTERNS (Most popular keywords)
-    st.sidebar.markdown("### 🔥 **Top 5 Patterns**")
+    st.sidebar.markdown("─" * 40); st.sidebar.markdown("### 🔥 **Top Patterns**")
     top_keywords = Counter(engine["query_frequency"]).most_common(5)
     for i, (keyword, count) in enumerate(top_keywords, 1):
-        st.sidebar.markdown(f"{i}. **{keyword.title()}**: {count} asks")
-    
-    st.sidebar.markdown("─" * 40)
-    
-    # Recent Learning
-    if engine["new_keywords"]:
-        st.sidebar.markdown("### ✨ **Recently Learned**")
-        recent = engine["new_keywords"][-5:]  # Last 5 new keywords
-        for word in recent:
-            st.sidebar.markdown(f"• {word.title()}")
-    
-    st.sidebar.markdown("─" * 40)
-    st.sidebar.markdown("**👤 Peer Learning Mode Active**")
+        st.sidebar.markdown(f"{i}. **{keyword.title()}**: {count}")
 
 # =============================================================================
-# DATA ANALYSIS ENGINE (Smart analysis based on learned patterns)
+# FIXED ANALYSIS - SINGLE CUSTOMER FOR "HIGHEST BALANCE"!
 # =============================================================================
+def find_best_numeric_column(df, keywords=[]):
+    """Smart money column detection"""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    money_keywords = ['balance', 'revenue', 'sales', 'amount', 'price', 'gst']
+    
+    best_col = None; best_score = 0
+    for col in numeric_cols:
+        score = sum(10 for keyword in money_keywords + keywords if keyword in col.lower())
+        if score > best_score:
+            best_score = score
+            best_col = col
+    
+    if best_score == 0 and numeric_cols:
+        col_values = [(col, df[col].sum()) for col in numeric_cols if df[col].sum() > 0]
+        if col_values: best_col = max(col_values, key=lambda x: x[1])[0]
+    
+    return best_col
+
+def find_customer_name(df, row_index):
+    """Smart customer name detection"""
+    name_cols = [col for col in df.columns if col.lower() in ['name', 'customer', 'user', 'id', 'subscriber']]
+    if name_cols:
+        return df.loc[row_index, name_cols[0]]
+    return f"Customer {row_index}"
+
 def analyze_data(df, query):
-    """Smart analysis that gets better with learned patterns"""
     query_lower = query.lower()
     
-    # Quick wins based on common SMB patterns
-    if any(word in query_lower for word in ['highest', 'top', 'max']):
-        col = df.select_dtypes(include=[np.number]).max().idxmax()
-        if col in df.columns:
-            top_n = df.nlargest(10, col)
-            fig = px.bar(top_n, x=top_n.index, y=col, title=f"Top 10 {col.title()}")
-            return f"✅ Top 10 **{col}** shown!", fig
+    # 🎯 FIXED: "customer with highest balance" = SINGLE customer!
+    if 'customer' in query_lower and any(word in query_lower for word in ['highest', 'top', 'max']):
+        value_col = find_best_numeric_column(df)
+        
+        if value_col and value_col in df.columns:
+            # SINGLE TOP CUSTOMER (not top 10!)
+            valid_data = df[[value_col]].dropna()
+            if not valid_data.empty:
+                top_row = valid_data.nlargest(1, value_col).iloc[0]
+                top_value = top_row[value_col]
+                customer_name = find_customer_name(df, top_row.name)
+                
+                # SINGLE customer card + mini chart
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.markdown(f"""
+                    ### 🏆 **#{1} Customer**
+                    **{customer_name}**
+                    **₹{top_value:,.0f}** {value_col.title()}
+                    """)
+                
+                with col2:
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(
+                        x=[top_value], y=[customer_name],
+                        orientation='h', text=[f'₹{top_value:,.0f}'],
+                        textposition='outside',
+                        marker_color='gold'
+                    ))
+                    fig.update_layout(
+                        title=f"Top {value_col.title()}",
+                        height=150, showlegend=False,
+                        margin=dict(l=20, r=20, t=50, b=20)
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                return f"✅ **{customer_name}** has highest **{value_col}**: ₹{top_value:,.0f}", fig
+        
+        return "❌ No customer data found", None
     
-    elif 'total' in query_lower or 'sum' in query_lower:
+    # Top 10 (when NO "customer" keyword)
+    elif any(word in query_lower for word in ['highest', 'top', 'max']):
+        value_col = find_best_numeric_column(df)
+        if value_col and value_col in df.columns:
+            valid_data = df[[value_col]].dropna().nlargest(10, value_col)
+            if not valid_data.empty:
+                labels = [find_customer_name(df, idx) for idx in valid_data.index]
+                fig = px.bar(
+                    x=valid_data[value_col], y=labels, orientation='h',
+                    title=f"🏆 Top 10 {value_col.title()}",
+                    labels={value_col: value_col.title()},
+                    color=valid_data[value_col], color_continuous_scale='Viridis'
+                )
+                fig.update_layout(height=400, showlegend=False)
+                return f"✅ Top 10 **{value_col}** shown!", fig
+        return "❌ No numeric data found", None
+    
+    # Totals
+    elif any(word in query_lower for word in ['total', 'sum']):
         numeric_cols = df.select_dtypes(include=[np.number]).columns
-        totals = df[numeric_cols].sum()
-        fig = px.bar(x=totals.index, y=totals.values, title="Column Totals")
-        return f"✅ Totals for all numeric columns!", fig
+        if len(numeric_cols) > 0:
+            totals = df[numeric_cols].sum()
+            fig = px.bar(x=totals.values, y=totals.index, orientation='h',
+                        title="💰 Column Totals", color=totals.values, color_continuous_scale='Blues')
+            return "✅ Totals shown!", fig
+        return "❌ No numeric data", None
     
-    elif any(word in query_lower for word in ['chart', 'graph', 'trend']):
+    # Charts
+    elif any(word in query_lower for word in ['chart', 'graph']):
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) >= 2:
-            fig = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1])
-            return f"✅ Correlation chart: {numeric_cols[0]} vs {numeric_cols[1]}", fig
+            fig = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1],
+                           title=f"{numeric_cols[0]} vs {numeric_cols[1]}")
+            return "✅ Chart created!", fig
+        return "❌ Need 2+ numeric columns", None
     
-    # Default: Show basic stats
-    st.info("📊 Basic data preview + stats")
-    return "Data loaded successfully!", None
+    return "📊 Try: 'customer with highest balance', 'top 10 revenue'", None
 
 # =============================================================================
 # MAIN APP
 # =============================================================================
 def main():
-    st.set_page_config(
-        page_title="AI Data Analyst",
-        page_icon="🧠",
-        layout="wide"
-    )
+    st.set_page_config(page_title="AI Data Analyst", page_icon="🧠", layout="wide")
     
-    st.title("🧠 **AI Data Analyst for SMBs**")
-    st.markdown("*Upload CSV → Ask questions → Get instant charts*")
+    st.title("🧠 **AI Data Analyst**"); st.markdown("*'customer with highest balance' → 1 customer instantly!*")
     
-    # Initialize learning engine
     if "learning_engine" not in st.session_state:
         st.session_state.learning_engine = init_learning_engine()
+    if "df" not in st.session_state:
+        st.session_state.df = None
     
-    # ═══════════════════════════════════════════════════════════════════════════
-    # LEFT SIDEBAR - ADMIN MODE TOGGLE (Peers don't see learning)
-    # ═══════════════════════════════════════════════════════════════════════════
     st.sidebar.title("⚙️ Controls")
+    if st.sidebar.checkbox("🔐 **Admin Mode**"): show_admin_panel()
     
-    # Admin mode toggle (hidden from peers by default)
-    if st.sidebar.checkbox("🔐 **Admin Mode**", key="admin_mode"):
-        show_admin_panel()
-    
-    # ═══════════════════════════════════════════════════════════════════════════
-    # MAIN APP INTERFACE (Clean for peers)
-    # ═══════════════════════════════════════════════════════════════════════════
-    
-    # File upload
-    uploaded_file = st.file_uploader("📁 **Upload your CSV file**", type="csv")
+    uploaded_file = st.file_uploader("📁 **Upload CSV**", type="csv")
     
     if uploaded_file is not None:
-        # Load data
-        df = pd.read_csv(uploaded_file)
-        st.session_state.df = df
+        df = pd.read_csv(uploaded_file); st.session_state.df = df
         
-        # Show data preview
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
+        col1, col2 = st.columns([3, 1])
+        with col1: 
             st.markdown("### 📊 **Data Preview**")
-            st.dataframe(df.head(), use_container_width=True)
-        
+            st.dataframe(df.head(10), use_container_width=True)
         with col2:
-            st.markdown("### 📈 **Quick Stats**")
-            st.metric("Rows", len(df))
+            st.markdown("### 📈 **Stats**")
+            st.metric("Rows", f"{len(df):,}")
             st.metric("Columns", len(df.columns))
-            st.metric("Missing", df.isnull().sum().sum())
+            st.metric("Numeric", df.select_dtypes(include=[np.number]).shape[1])
         
-        # Query input
         st.markdown("---")
-        query = st.text_input("💬 **Ask about your data:**", 
-                            placeholder="e.g. 'show highest balance' or 'total revenue'")
+        query = st.text_input("💬 **Ask:**", placeholder="customer with highest balance")
         
         if query:
             with st.spinner("🧠 Analyzing..."):
-                # Analyze data
                 result_text, chart = analyze_data(df, query)
-                
-                # LEARN SILENTLY (Peers see nothing!)
                 learn_from_query(query, success=chart is not None)
                 
-                # Show results (CLEAN - no learning info)
-                st.success(result_text)
-                
-                if chart:
-                    st.plotly_chart(chart, use_container_width=True)
-                else:
-                    st.info("💡 Try: 'highest', 'total', 'chart', 'top revenue'")
-    
+                st.markdown(result_text)
+                if chart: st.plotly_chart(chart, use_container_width=True)
+                else: st.info("💡 Try: 'customer with highest balance'")
     else:
-        st.info("👆 **Upload a CSV file to get started!**")
+        st.info("👆 **Upload CSV!**")
         st.markdown("""
-        ### 🎯 **Perfect for SMBs:**
-        - Telecom: highest balance, churn analysis
-        - Retail: top sales, GST trends  
-        - Services: revenue by region
-        
-        **Your peers' questions make it smarter automatically!**
+        ### 🎯 **Works perfectly:**
+        - `customer with highest balance` → **1 customer**
+        - `top revenue` → **Top 10 list**
+        - `total sales` → **Summary**
         """)
 
 if __name__ == "__main__":
