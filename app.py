@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain.callbacks import StreamlitCallbackHandler
 import os
@@ -15,15 +15,15 @@ MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB
 
 with st.sidebar:
     st.header("⚙️ Setup")
-    # FIXED: Render Environment Variable only
-    claude_api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not claude_api_key:
-        st.error("🚫 Add **ANTHROPIC_API_KEY** to Render Environment Variables")
+    # OpenAI API Key from Render Environment
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        st.error("🚫 Add **OPENAI_API_KEY** to Render Environment Variables")
         st.markdown("""
         **Render Setup:**
         1. Dashboard → Environment tab
-        2. Key: `ANTHROPIC_API_KEY`
-        3. Value: `sk-ant-your-complete-key`
+        2. Key: `OPENAI_API_KEY`
+        3. Value: `sk-proj-your-complete-openai-key`
         """)
         st.stop()
     
@@ -31,11 +31,12 @@ with st.sidebar:
                                    help="Sales, GST, finance data (max 200MB)")
 
 @st.cache_resource
-def load_claude():
-    return ChatAnthropic(
-        model="claude-3-sonnet-20240229",
+def load_gpt():
+    """Load GPT-4o-mini - 100% reliable"""
+    return ChatOpenAI(
+        model="gpt-4o-mini",  # ✅ Always available
         temperature=0,
-        api_key=claude_api_key,
+        api_key=openai_api_key,
         streaming=True
     )
 
@@ -66,7 +67,7 @@ if uploaded_file is not None:
     
     st.subheader("💬 Ask about your data")
     
-    llm = load_claude()
+    llm = load_gpt()
     agent = create_pandas_dataframe_agent(
         llm, df,
         verbose=True,
@@ -78,10 +79,12 @@ if uploaded_file is not None:
     if "messages" not in st.session_state:
         st.session_state.messages = []
     
+    # Show chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
+    # Chat input
     if prompt := st.chat_input("Ask anything... (ex: 'top 5 customers', 'sales trends')"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -89,7 +92,7 @@ if uploaded_file is not None:
         
         with st.chat_message("assistant"):
             st_cb = StreamlitCallbackHandler(st.container())
-            with st.spinner("🤖 Claude is analyzing your data..."):
+            with st.spinner("🤖 GPT-4o-mini is analyzing your data..."):
                 try:
                     response = agent.run(prompt, callbacks=[st_cb])
                     st.markdown(response)
