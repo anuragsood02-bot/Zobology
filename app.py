@@ -33,7 +33,7 @@ with st.sidebar:
 @st.cache_resource
 def load_claude():
     return ChatAnthropic(
-        model="claude-3-5-sonnet-20240620",
+        model="claude-3-5-sonnet-latest",
         temperature=0,
         api_key=claude_api_key,
         streaming=True
