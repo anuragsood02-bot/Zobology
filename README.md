@@ -1,2 +1,0 @@
-# Zobology
-Service Portal
